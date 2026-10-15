@@ -1,4 +1,4 @@
-# 🫁 8-Channel Acoustic Array Lung Monitor (EOH MVP)
+# 🫁 8-Channel Acoustic Array Lung Monitor (MVP)
 
 Interactive Python/Streamlit prototype simulating multi-channel respiratory sound processing, 2D STFT spectrogram generation, and multimodal PyTorch CNN classification.
 
