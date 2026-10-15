@@ -126,3 +126,8 @@ if st.sidebar.button("Run Acoustic Scan"):
         ax.set_xlabel("Time Bins")
         ax.set_ylabel("Freq Bins")
         st.pyplot(fig)
+
+
+#source venv/bin/activate
+
+#streamlit run app.py  
