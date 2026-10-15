@@ -52,7 +52,7 @@ class MultiChannelAcousticCNN(nn.Module): #defines a trainable neural network
 
         self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, padding=1)
         self.adaptive_pool = nn.AdaptiveAvgPool2d((8,8))
-        self.fc = nn.Linear(32*8*8,2) #0 = normal, 1 = wheeze detected
+        self.fc = nn.Linear(32 * 8 * 8, 4)  # 0=Normal, 1=Crackle, 2=Wheeze, 3=Both
 
     def forward(self, x):
         #input shape (batch, 8_channels, Fre_Bins, Time_Steps)
@@ -64,20 +64,42 @@ class MultiChannelAcousticCNN(nn.Module): #defines a trainable neural network
 
     
 def predict_with_demographics(acoustic_logits, age, is_smoker):
-    #fuses acoustic features with patient risk factors to generate diagnostic probability
-    #softmax raw cnn output to get acoustic probability
-    probabilities = torch.softmax(acoustic_logits, dim=1)
-    base_pathology_prob = probabilities[0][1].item()
+    """
+    Fuses 8-chanenel CNN acoustic logits with patient demographics using clinically weighted prior adjustment across 4 diagnsotic classes
+    """
 
-    #apply risk weighting rules
+    #1 - convert raw CNN logits to base probabilities
+    base_probs = torch.softmax(acoustic_logits, dim=1).squeeze(0)
+
+    #2 - compute demographic risk factor (placeholder heuristic)
     risk_factor = 1.0
+
+    #risk scaling
     if age > 50:
         risk_factor += 0.15
     if is_smoker:
         risk_factor += 0.25
+    
+    modified_probs = base_probs.clone()
+    modified_probs[1:] = modified_probs[1:] * risk_factor
 
-    final_score = min(base_pathology_prob * risk_factor, 1.0)
-    return final_score
+    final_probs = modified_probs/ modified_probs.sum()
+
+    predicted_class = torch.argmax(final_probs).item()
+    return predicted_class, final_probs.detach().numpy(), risk_factor
+    
+    # probabilities = torch.softmax(acoustic_logits, dim=1)
+    # base_pathology_prob = probabilities[0][1].item()
+
+    # #apply risk weighting rules
+    # risk_factor = 1.0
+    # if age > 50:
+    #     risk_factor += 0.15
+    # if is_smoker:
+    #     risk_factor += 0.25
+
+    # final_score = min(base_pathology_prob * risk_factor, 1.0)
+    # return final_score
 
 #streamlit dashboard interface
 st.set_page_config(page_title="EOH Acoustic Array Monitor", layout="wide")
@@ -103,19 +125,35 @@ if st.sidebar.button("Run Acoustic Scan"):
         input_tensor = spectrograms.unsqueeze(0)
         logits = model(input_tensor)
     
-    risk_score = predict_with_demographics(logits, age, is_smoker)
+    # FIX 2: Unpack all 3 return values
+    pred_class, probs, demo_factor = predict_with_demographics(logits, age, is_smoker)
 
     #3 display diagnostic output
+    class_labels = {
+        0: "Normal",
+        1: "Crackle Detected",
+        2: "Wheeze Detected",
+        3: "Both (Crackle & Wheeze Detected)"
+    }
+
     st.subheader("Diagnostic Classification Results")
     col1, col2 = st.columns(2)
 
+    # FIX 3: Update the UI metrics using the unpacked variables
     with col1:
-        st.metric(label="Calculated Disease Probability", value = f"{risk_score*100: .1f}%")
-        if risk_score >0.5:
-            st.error("⚠️️ ALERT: Pathological Wheeze / Crackle Detected")
-        else:
+        detected_label = class_labels[pred_class]
+        confidence = probs[pred_class] * 100
+        
+        st.metric(label="Primary Classification", value=detected_label)
+        st.metric(label="Adjusted Confidence", value=f"{confidence:.1f}%")
+        
+        if pred_class == 0:
             st.success("✅ Sound Profile: Healthy / Normal Breathing")
-    
+        else:
+            st.error(f"⚠️ ALERT: Pathological Activity Identified - {detected_label}")
+            
+        st.caption(f"ℹ️ Applied Demo Risk Multiplier: {demo_factor:.2f}x (Age: {age}, Smoker: {is_smoker})")
+        
     with col2:
         #Display spectrogram heatmap of channel 3, the one with the injected wheeze
         fig, ax = plt.subplots(figsize = (6,3))

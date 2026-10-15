@@ -1,5 +1,7 @@
+venv/
 __pycache__/
 *.pyc
-.venv/
-venv/
 .DS_Store
+.streamlit/
+data/raw_icbhi/
+models/checkpoints/
