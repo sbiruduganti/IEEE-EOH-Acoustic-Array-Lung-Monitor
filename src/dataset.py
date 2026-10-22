@@ -25,13 +25,8 @@ class ICBHIDataset(Dataset):
         self.samples = self._parse_annotations()
 
     def _load_demographics(self, demo_path):
-        if demo_path is None or not os.path.exists(demo_path):
-            print(f"Warning: Demographic file '{demo_path}' not found. Defaulting mask flags to 0.")
-            return demo_dict
-
-            
         demo_dict = {}
-        if not os.path.exists(demo_path):
+        if demo_path is None or not os.path.exists(demo_path):
             print(f"Warning: Demographic file '{demo_path}' not found. Defaulting mask flags to 0.")
             return demo_dict
         

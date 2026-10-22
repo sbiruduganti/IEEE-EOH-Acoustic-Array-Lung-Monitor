@@ -57,9 +57,11 @@ weight = st.sidebar.number_input("Weight (kg)", min_value=10, max_value=200, val
 bmi = weight / ((height / 100) ** 2)
 st.sidebar.info(f"Calculated BMI: **{bmi:.1f}**")
 
-# Construct [1, 5] demographic vector expected by ICBHIModel
+# Construct [1, 5] demographic vector matching dataset format:
+# [age, sex, bmi, age_present, bmi_present]
 sex_binary = 1.0 if sex == "Male" else 0.0
-demo_tensor = torch.tensor([[age, sex_binary, height, weight, bmi]], dtype=torch.float32)
+# Live dashboard inputs assume age and bmi are provided (presence flags = 1.0)
+demo_tensor = torch.tensor([[age, sex_binary, bmi, 1.0, 1.0]], dtype=torch.float32)
 
 st.sidebar.markdown("---")
 st.sidebar.header("⚙️ Harness Settings")
