@@ -4,6 +4,8 @@ import torch.nn.functional as F
 import numpy as np
 import os
 import matplotlib.pyplot as plt  # FIXED: Added .pyplot
+from pathlib import Path
+
 
 # Import custom model from src/model.py
 from src.model import ICBHIModel
@@ -15,7 +17,10 @@ st.set_page_config(
 )
 
 CLASS_NAMES = ["Normal", "Crackle", "Wheeze", "Both (Crackle & Wheeze)"]
-CHECKPOINT_PATH = "checkpoints/best_icbhi_model.pth"
+
+# Dynamically locate the folder containing dashboard.py
+BASE_DIR = Path(__file__).resolve().parent
+CHECKPOINT_PATH = BASE_DIR / "checkpoints" / "best_icbhi_model.pth"
 
 # Map 8 channels to standard clinical chest positions
 STETHOSCOPE_POSITIONS = {
@@ -172,4 +177,4 @@ else:
     st.info("👈 Click **'Capture Live Breath Cycle'** in the sidebar to stream multi-channel audio into the dashboard.")
 #source venv/bin/activate
 
-#streamlit run dashboard.py 
+#streamlit run software/dashboard.py 
