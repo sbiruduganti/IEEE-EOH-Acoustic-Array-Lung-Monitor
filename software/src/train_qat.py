@@ -78,22 +78,24 @@ def run_qat_finetuning():
     class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32).to(device)
 
     print("\nInitializing QAT Model (W4A4)...")
+    # 1. Initialize model on CPU
     model = ICBHIModelQAT(num_classes=NUM_CLASSES, weight_bit_width=4, act_bit_width=4)
-    model = model.to(device)
 
-    # Ensure Brevitas internal quantization buffers are explicitly moved to GPU
-    for module in model.modules():
-        if hasattr(module, 'to'):
-            module.to(device)
-
+    # 2. Load pre-trained FP32 weights into model FIRST (while on CPU)
     if os.path.exists(FP32_CHECKPOINT):
-        checkpoint = torch.load(FP32_CHECKPOINT, map_location=device)
+        checkpoint = torch.load(FP32_CHECKPOINT, map_location='cpu')
         state_dict = checkpoint['model_state_dict'] if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint else checkpoint
         model.load_state_dict(state_dict, strict=False)
         print("--> Loaded FP32 floating-point checkpoint into QAT model!")
     else:
         print("--> Warning: FP32 checkpoint not found! Training QAT model from scratch.")
 
+    # 3. Move the model AND all Brevitas quantization buffers to CUDA together SECOND
+    model = model.to(device)
+    for module in model.modules():
+        if hasattr(module, 'to'):
+            module.to(device)
+        
     criterion = nn.CrossEntropyLoss(weight=class_weights_tensor)
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=2, factor=0.5)
