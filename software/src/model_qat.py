@@ -22,9 +22,8 @@ class SharedAudioBackboneQAT(nn.Module):
         
         self.pool = nn.MaxPool2d(2, 2)
         
-        # Replace AdaptiveAvgPool2d with explicit 4x3 MaxPool to guarantee clean [4, 4] output:
-        # Input shape entering pool4: [B, 64, 16, 15] -> Output shape: [B, 64, 4, 4]
-        self.pool4 = nn.MaxPool2d(kernel_size=(4, 3), stride=(4, 3))
+        # Adaptive pooling forces spatial output to [4, 4], guaranteeing 64 * 4 * 4 = 1024 audio features
+        self.pool4 = nn.AdaptiveAvgPool2d((4, 4))
 
     def forward(self, x):
         x = self.pool(self.relu1(self.bn1(self.conv1(x))))
@@ -46,7 +45,7 @@ class ICBHIModelQAT(nn.Module):
         )
 
         self.classifier = nn.Sequential(
-            qnn.QuantLinear(1280 + 32, 128, weight_bit_width=weight_bit_width),
+            qnn.QuantLinear(1024 + 32, 128, weight_bit_width=weight_bit_width),
             qnn.QuantReLU(bit_width=act_bit_width),
             nn.Dropout(p=0.3),
             qnn.QuantLinear(128, num_classes, weight_bit_width=weight_bit_width)
