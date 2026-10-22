@@ -1,180 +1,117 @@
 import os
-import glob
+import pandas as pd
 import torch
-import torchaudio
-import numpy as np
+import torch.nn.functional as F
 from torch.utils.data import Dataset
-import torchaudio.transforms as T
+import torchaudio
 
 class ICBHIDataset(Dataset):
-    """
-    This is the parser for the dataset from kaggle.
-    It parses audio cycles, anotations, and patient demographic metadata.
-    """
-
-    def __init__(self, data_dir, demo_file=None, sample_rate=4000, target_duration=2.0):
+    def __init__(self, data_dir, sample_rate=4000, max_len=4.0, n_mels=64):
         self.data_dir = data_dir
         self.sample_rate = sample_rate
-        self.target_length = int(sample_rate * target_duration)
+        self.target_samples = int(sample_rate * max_len) # 16,000 samples for 4.0s
+        self.resamplers = {} # Cache resamplers by original sample rate (e.g., 44100, 10000)
 
-        #2d stft spectrogram transformer
-        self.spectrogram_transform = T.Spectrogram(n_fft=256, hop_length=64)
-        
-        #initialize demographics and annotations next
-        self.demographics = self._load_demographics(demo_file)
-        self.samples = self._parse_annotations()
+        # Log-Mel Spectrogram bounded to clinical lung sound frequencies (50 Hz - 2000 Hz)
+        self.mel_transform = torchaudio.transforms.MelSpectrogram(
+            sample_rate=sample_rate,
+            n_fft=512,
+            hop_length=256,
+            n_mels=n_mels,
+            f_min=50.0,
+            f_max=float(sample_rate // 2)
+        )
 
-    def _load_demographics(self, demo_path):
-        if demo_path is None or not os.path.exists(demo_path):
-            print(f"Warning: Demographic file '{demo_path}' not found. Defaulting mask flags to 0.")
-            return demo_dict
-
-            
-        demo_dict = {}
-        if not os.path.exists(demo_path):
-            print(f"Warning: Demographic file '{demo_path}' not found. Defaulting mask flags to 0.")
-            return demo_dict
-        
-        with open(demo_path, 'r') as f:
-            for line in f:
-                parts = line.strip().split()
-                if len(parts)<6:
-                    continue
-                try:
-                    patient_id = int(parts[0])
-
-                except ValueError:
-                    continue #skip header or malformed rows
-                
-                #age
-                age_present = 1.0 if parts[1] != 'NA' else 0.0
-                age = float(parts[1]) if age_present else 0.0
-
-                #sex
-                sex = 1.0 if parts[2] == 'M' else 0.0
-
-                #bmi
-                bmi_present = 0.0
-                bmi = 0.0
-
-                if parts[3] != 'NA':
-                    bmi = float(parts[3])
-                    bmi_present = 1.0
-                elif parts[4] != 'NA' and parts[5] != 'NA':
-                    try:
-                        weight_kg = float(parts[4])
-                        height_m = float(parts[5])/100.0
-                        if height_m>0:
-                            bmi = weight_kg / (height_m**2)
-                            bmi_present = 1.0
-                    except ValueError:
-                        bmi = 0.0
-
-                #5-element vector
-                demo_dict[patient_id] = [age, sex, bmi, age_present, bmi_present]
-        return demo_dict
-    
-    def _parse_annotations(self):
-        samples = []
-
-        #Find all .txt files inside data_dir (including subdirectories)
-        txt_files = glob.glob(os.path.join(self.data_dir, "**", "*.txt"), recursive=True)
-
-        for txt_path in txt_files:
-            #match text fileto audio .wav file
-            wav_path = txt_path.replace(".txt", ".wav")
-            if not os.path.exists(wav_path):
-                continue
-            
-            filename = os.path.basename(txt_path)
-            try:
-                #extract patient id
-                patient_id = int(filename.split("_")[0])
-            except ValueError:
-                continue
-            
-            #read line by line
-            with open(txt_path, 'r') as f:
-                for line in f:
-                    parts = line.strip().split()
-                    if len(parts)<4:
-                        continue
-                    
-                    start_t = float(parts[0])
-                    end_t = float(parts[1])
-                    crackle = int(parts[2])
-                    wheeze = int(parts[3])
-
-                    #Map flags to 4 classes
-
-                    if crackle == 0 and wheeze == 0:
-                        label = 0 #normal
-                    elif crackle == 1 and wheeze == 0:
-                        label = 1 #crackle
-                    elif crackle == 0 and wheeze == 1:
-                        label = 2 #wheeze
+        # Load demographic data (supports both ICBHI demographic_info.txt and custom format)
+        self.demographics = {}
+        for fname in ["filename_to_demographics.txt", "demographic_info.txt"]:
+            demo_path = os.path.join(data_dir, fname)
+            if os.path.exists(demo_path):
+                df_demo = pd.read_csv(demo_path, sep=r"\s+|\t", engine="python", header=None, na_values="NA")
+                for _, row in df_demo.iterrows():
+                    pid = str(int(row[0])) if pd.notna(row[0]) and str(row[0]).isdigit() else str(row[0])
+                    age = float(row[1]) / 100.0 if pd.notna(row[1]) else 0.60
+                    sex = 1.0 if str(row[2]).strip().upper() == "M" else 0.0
+                    # Calculate BMI from Adult BMI (col 3) or Child Weight/Height (cols 4, 5)
+                    if pd.notna(row[3]):
+                        bmi = float(row[3]) / 50.0
+                    elif len(row) > 5 and pd.notna(row[4]) and pd.notna(row[5]) and float(row[5]) > 0:
+                        bmi = (float(row[4]) / ((float(row[5]) / 100.0) ** 2)) / 50.0
                     else:
-                        label = 3 #both
-                    
-                    #save dictionary entry for breath cycle
-                    samples.append({
-                        "wav_path": wav_path,
-                        "start_t": start_t,
-                        "end_t": end_t,
-                        "label": label,
-                        "patient_id": patient_id
-                    })
-        return samples
-    
-    def __len__(self):
-        return len(self.samples)
-    
-    def __getitem__(self, idx):
-        sample = self.samples[idx]
+                        bmi = 0.50
+                    self.demographics[pid] = [age, bmi, sex, 0.0, 0.0]
+                break
 
-        #load audio clips
-        waveform, sr = torchaudio.load(sample["wav_path"])
-        
-        #resample to target sample rate if needed
-        if sr != self.sample_rate:
-            resample = T.Resample(sr, self.sample_rate)
-            waveform = resample(waveform)
-        
-        # convert mono if multi-channel
+        # Parse every annotated breathing cycle from the matching .txt files
+        self.cycles = []
+        wav_files = sorted([f[:-4] for f in os.listdir(data_dir) if f.endswith(".wav")])
+        for file_id in wav_files:
+            txt_path = os.path.join(data_dir, file_id + ".txt")
+            wav_path = os.path.join(data_dir, file_id + ".wav")
+            patient_id = file_id.split("_")[0]
+
+            if os.path.exists(txt_path):
+                df_cycles = pd.read_csv(txt_path, sep=r"\s+", header=None, names=["start", "end", "crackle", "wheeze"])
+                for _, row in df_cycles.iterrows():
+                    duration = float(row["end"]) - float(row["start"])
+                    if duration < 0.3: # Screen out corrupted micro-cycles (< 0.3s)
+                        continue
+                    c, w = int(row["crackle"]), int(row["wheeze"])
+                    # 0: Healthy, 1: Wheeze, 2: Crackle, 3: Both (matches app.py class order)
+                    if c == 0 and w == 0:
+                        label = 0
+                    elif c == 0 and w == 1:
+                        label = 1
+                    elif c == 1 and w == 0:
+                        label = 2
+                    else:
+                        label = 3
+                    self.cycles.append((wav_path, patient_id, float(row["start"]), float(row["end"]), label))
+
+    def __len__(self):
+        return len(self.cycles)
+
+    def __getitem__(self, idx):
+        wav_path, patient_id, start_sec, end_sec, label = self.cycles[idx]
+        waveform, sr = torchaudio.load(wav_path)
+
+        # 1. Convert stereo to mono
         if waveform.shape[0] > 1:
             waveform = torch.mean(waveform, dim=0, keepdim=True)
-        
-        #slice audio to specific breath cycle interval
-        start_sample = int(sample["start_t"]*self.sample_rate)
-        end_sample = int(sample["end_t"] * self.sample_rate)
-        cycle_wave = waveform[:, start_sample:end_sample]
 
-        #edge case safeguard for empty subslices
-        if cycle_wave.numel() == 0:
-            cycle_wave = torch.zeros((1, self.target_length), dtype=torch.float32)
+        # 2. Slice exact respiratory cycle BEFORE resampling for speed
+        start_frame = int(start_sec * sr)
+        end_frame = min(int(end_sec * sr), waveform.shape[1])
+        waveform = waveform[:, start_frame:end_frame]
 
-        #pad or trim waveform to standard target duration
-        if cycle_wave.shape[1] < self.target_length:
-            pad_amount = self.target_length - cycle_wave.shape[1]
-            cycle_wave = torch.nn.functional.pad(cycle_wave, (0, pad_amount))
+        # 3. Cached resampling to 4000 Hz
+        if sr != self.sample_rate:
+            if sr not in self.resamplers:
+                self.resamplers[sr] = torchaudio.transforms.Resample(orig_freq=sr, new_freq=self.sample_rate)
+            waveform = self.resamplers[sr](waveform)
+
+        # 4. Zero-mean & peak-normalize cycle to screen out stethoscope gain differences
+        waveform = waveform - waveform.mean()
+        max_val = waveform.abs().max()
+        if max_val > 1e-6:
+            waveform = waveform / max_val
+
+        # 5. Circular pad (tile) short cycles or trim long cycles to 16,000 samples (4.0s)
+        cur_len = waveform.shape[1]
+        if cur_len < self.target_samples:
+            repeats = (self.target_samples // cur_len) + 1
+            waveform = waveform.repeat(1, repeats)[:, :self.target_samples]
         else:
-            cycle_wave = cycle_wave[:, :self.target_length]
-        
-        #convert 1d waveform to 2d spectrogram image
-        spectrogram = self.spectrogram_transform(cycle_wave)
+            waveform = waveform[:, :self.target_samples]
 
-        #4 fetch 5 element demographic vector [age, sex, smi, age_mask, bmi_mask]
-        demo_vec = self.demographics.get(sample["patient_id"], [0.0, 0.0, 0.0, 0.0, 0.0])
+        # 6. Compute Log-Mel Spectrogram [1, 64, 63] and normalize to [0, 1] for 8-bit quantization
+        mel_spec = self.mel_transform(waveform)
+        log_mel = torch.log(mel_spec + 1e-6)
+        log_mel = (log_mel - log_mel.min()) / (log_mel.max() - log_mel.min() + 1e-6)
+
+        # 7. Retrieve patient demographics + replace slot 4 with normalized cycle duration
+        demo_vec = list(self.demographics.get(patient_id, [0.6, 0.5, 1.0, 0.0, 0.0]))
+        demo_vec[3] = min((end_sec - start_sec) / 10.0, 1.0) # Inject real breathing cycle length!
         demo_tensor = torch.tensor(demo_vec, dtype=torch.float32)
 
-        label_tensor = torch.tensor(sample["label"], dtype=torch.long)
-
-        return {
-            "spectrogram": spectrogram,
-            "demographics": demo_tensor,
-            "label": label_tensor
-        }
-
-
-
-
+        return waveform, log_mel, demo_tensor, torch.tensor(label, dtype=torch.long), patient_id
