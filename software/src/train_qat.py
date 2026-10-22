@@ -78,7 +78,13 @@ def run_qat_finetuning():
     class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32).to(device)
 
     print("\nInitializing QAT Model (W4A4)...")
-    model = ICBHIModelQAT(num_classes=NUM_CLASSES, weight_bit_width=4, act_bit_width=4).to(device)
+    model = ICBHIModelQAT(num_classes=NUM_CLASSES, weight_bit_width=4, act_bit_width=4)
+    model = model.to(device)
+
+    # Ensure Brevitas internal quantization buffers are explicitly moved to GPU
+    for module in model.modules():
+        if hasattr(module, 'to'):
+            module.to(device)
 
     if os.path.exists(FP32_CHECKPOINT):
         checkpoint = torch.load(FP32_CHECKPOINT, map_location=device)
