@@ -46,7 +46,7 @@ class ICBHIModelQAT(nn.Module):
         )
 
         self.classifier = nn.Sequential(
-            qnn.QuantLinear(1024 + 32, 128, weight_bit_width=weight_bit_width),
+            qnn.QuantLinear(1280 + 32, 128, weight_bit_width=weight_bit_width),
             qnn.QuantReLU(bit_width=act_bit_width),
             nn.Dropout(p=0.3),
             qnn.QuantLinear(128, num_classes, weight_bit_width=weight_bit_width)
