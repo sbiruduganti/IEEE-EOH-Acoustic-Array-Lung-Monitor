@@ -2,16 +2,6 @@ import torch
 import torch.nn as nn
 import brevitas.nn as qnn
 
-class QuantFastGELU(nn.Module):
-    """Fast tanh-approximated GELU followed by 8-bit signed Brevitas quantization."""
-    def __init__(self, bit_width=8, return_quant_tensor=False):
-        super().__init__()
-        self.act = nn.GELU(approximate="tanh")
-        self.quant = qnn.QuantIdentity(bit_width=bit_width, return_quant_tensor=return_quant_tensor)
-
-    def forward(self, x):
-        return self.quant(self.act(x))
-
 
 class QuantBasicBlock2d(nn.Module):
     def __init__(self, in_planes, planes, stride=1, bit_width=8):
@@ -20,7 +10,7 @@ class QuantBasicBlock2d(nn.Module):
             in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False, weight_bit_width=bit_width
         )
         self.bn1 = nn.BatchNorm2d(planes)
-        self.relu1 = QuantFastGELU(bit_width=bit_width, return_quant_tensor=False)
+        self.relu1 = qnn.QuantReLU(bit_width=bit_width, return_quant_tensor=False)
 
         self.conv2 = qnn.QuantConv2d(
             planes, planes, kernel_size=3, stride=1, padding=1, bias=False, weight_bit_width=bit_width
@@ -34,7 +24,7 @@ class QuantBasicBlock2d(nn.Module):
                 nn.BatchNorm2d(planes),
                 qnn.QuantIdentity(bit_width=bit_width, return_quant_tensor=False),
             )
-        self.relu_out = QuantFastGELU(bit_width=bit_width, return_quant_tensor=False)
+        self.relu_out = qnn.QuantReLU(bit_width=bit_width, return_quant_tensor=False)
 
     def forward(self, x):
         out = self.relu1(self.bn1(self.conv1(x)))
@@ -50,7 +40,7 @@ class QuantResNet18LungModel(nn.Module):
         self.stem = nn.Sequential(
             qnn.QuantConv2d(in_channels, 24, kernel_size=3, stride=1, padding=1, bias=False, weight_bit_width=bit_width),
             nn.BatchNorm2d(24),
-            QuantFastGELU(bit_width=bit_width, return_quant_tensor=False),
+            qnn.QuantReLU(bit_width=bit_width, return_quant_tensor=False),
             nn.MaxPool2d(2, 2),
         )
         self.layer1 = QuantBasicBlock2d(24, 32, stride=1, bit_width=bit_width)   # 32x32
@@ -62,14 +52,14 @@ class QuantResNet18LungModel(nn.Module):
         self.quant_demo = qnn.QuantIdentity(bit_width=bit_width, return_quant_tensor=False)
         self.demo_mlp = nn.Sequential(
             qnn.QuantLinear(5, 16, bias=True, weight_bit_width=bit_width),
-            QuantFastGELU(bit_width=bit_width, return_quant_tensor=False),
+            qnn.QuantReLU(bit_width=bit_width, return_quant_tensor=False),
             qnn.QuantLinear(16, 32, bias=True, weight_bit_width=bit_width),
-            QuantFastGELU(bit_width=bit_width, return_quant_tensor=False),
+            qnn.QuantReLU(bit_width=bit_width, return_quant_tensor=False),
         )
         self.classifier = nn.Sequential(
             nn.Dropout(0.35),
             qnn.QuantLinear(128 + 32, 64, bias=True, weight_bit_width=bit_width),
-            QuantFastGELU(bit_width=bit_width, return_quant_tensor=False),
+            qnn.QuantReLU(bit_width=bit_width, return_quant_tensor=False),
             qnn.QuantLinear(64, num_classes, bias=True, weight_bit_width=bit_width),
         )
 
@@ -90,22 +80,22 @@ class QuantDualStreamLungModel(nn.Module):
         self.cnn2d = nn.Sequential(
             qnn.QuantConv2d(in_channels, 24, kernel_size=3, padding=1, bias=False, weight_bit_width=bit_width),
             nn.BatchNorm2d(24),
-            QuantFastGELU(bit_width=bit_width, return_quant_tensor=False),
+            qnn.QuantReLU(bit_width=bit_width, return_quant_tensor=False),
             nn.MaxPool2d(2, 2),  # 32x32
 
             qnn.QuantConv2d(24, 48, kernel_size=3, padding=1, bias=False, weight_bit_width=bit_width),
             nn.BatchNorm2d(48),
-            QuantFastGELU(bit_width=bit_width, return_quant_tensor=False),
+            qnn.QuantReLU(bit_width=bit_width, return_quant_tensor=False),
             nn.MaxPool2d(2, 2),  # 16x16
 
             qnn.QuantConv2d(48, 96, kernel_size=3, padding=1, bias=False, weight_bit_width=bit_width),
             nn.BatchNorm2d(96),
-            QuantFastGELU(bit_width=bit_width, return_quant_tensor=False),
+            qnn.QuantReLU(bit_width=bit_width, return_quant_tensor=False),
             nn.MaxPool2d(2, 2),  # 8x8
 
             qnn.QuantConv2d(96, 128, kernel_size=3, padding=1, bias=False, weight_bit_width=bit_width),
             nn.BatchNorm2d(128),
-            QuantFastGELU(bit_width=bit_width, return_quant_tensor=False),
+            qnn.QuantReLU(bit_width=bit_width, return_quant_tensor=False),
             nn.MaxPool2d(kernel_size=(8, 8)),  # [B, 128, 1, 1]
         )
 
@@ -114,17 +104,17 @@ class QuantDualStreamLungModel(nn.Module):
         self.cnn1d = nn.Sequential(
             qnn.QuantConv1d(2, 24, kernel_size=5, padding=2, bias=False, weight_bit_width=bit_width),
             nn.BatchNorm1d(24),
-            QuantFastGELU(bit_width=bit_width, return_quant_tensor=False),
+            qnn.QuantReLU(bit_width=bit_width, return_quant_tensor=False),
             nn.MaxPool1d(4),  # 256 -> 64
 
             qnn.QuantConv1d(24, 48, kernel_size=5, padding=2, bias=False, weight_bit_width=bit_width),
             nn.BatchNorm1d(48),
-            QuantFastGELU(bit_width=bit_width, return_quant_tensor=False),
+            qnn.QuantReLU(bit_width=bit_width, return_quant_tensor=False),
             nn.MaxPool1d(4),  # 64 -> 16
 
             qnn.QuantConv1d(48, 64, kernel_size=3, padding=1, bias=False, weight_bit_width=bit_width),
             nn.BatchNorm1d(64),
-            QuantFastGELU(bit_width=bit_width, return_quant_tensor=False),
+            qnn.QuantReLU(bit_width=bit_width, return_quant_tensor=False),
             nn.MaxPool1d(16),  # 16 -> 1 -> [B, 64]
         )
 
@@ -132,15 +122,15 @@ class QuantDualStreamLungModel(nn.Module):
         self.quant_demo = qnn.QuantIdentity(bit_width=bit_width, return_quant_tensor=False)
         self.demo_mlp = nn.Sequential(
             qnn.QuantLinear(5, 16, bias=True, weight_bit_width=bit_width),
-            QuantFastGELU(bit_width=bit_width, return_quant_tensor=False),
+            qnn.QuantReLU(bit_width=bit_width, return_quant_tensor=False),
             qnn.QuantLinear(16, 32, bias=True, weight_bit_width=bit_width),
-            QuantFastGELU(bit_width=bit_width, return_quant_tensor=False),
+            qnn.QuantReLU(bit_width=bit_width, return_quant_tensor=False),
         )
 
         self.classifier = nn.Sequential(
             nn.Dropout(0.35),
             qnn.QuantLinear(128 + 64 + 32, 64, bias=True, weight_bit_width=bit_width),
-            QuantFastGELU(bit_width=bit_width, return_quant_tensor=False),
+            qnn.QuantReLU(bit_width=bit_width, return_quant_tensor=False),
             qnn.QuantLinear(64, num_classes, bias=True, weight_bit_width=bit_width),
         )
 
