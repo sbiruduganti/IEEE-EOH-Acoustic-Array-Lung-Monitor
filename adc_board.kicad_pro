@@ -1,0 +1,18 @@
+{
+  "meta": {
+    "filename": "adc_board.kicad_pro",
+    "version": 1
+  },
+  "schematic": {},
+  "boards": [],
+  "sheets": [
+    [
+      "6f1c0a52-7d0e-4f3b-9a51-2b8d3c4e0001",
+      ""
+    ],
+    [
+      "6f1c0a52-7d0e-4f3b-9a51-2b8d3c4e0002",
+      "ADC"
+    ]
+  ]
+}
