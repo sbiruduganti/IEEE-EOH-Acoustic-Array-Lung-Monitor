@@ -40,3 +40,12 @@ streamlit run software/app.py
 ```
 
 Quantization-aware training and the FINN export also need `pip install brevitas`.
+
+## Team
+
+| Role | Members |
+|---|---|
+| Project Manager | Simon Yin |
+| FPGA | Asherr Ralph, Ritvik Patnala |
+| Circuit Design | Vimal Selvam, Tommy Liu |
+| Software | Samuel Biruduganti, Shaurya Khati |
