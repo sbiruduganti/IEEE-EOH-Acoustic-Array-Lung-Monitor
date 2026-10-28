@@ -1,0 +1,3 @@
+(sym_lib_table
+  (lib (name "eoh_adc")(type "KiCad")(uri "${KIPRJMOD}/eoh_adc.kicad_sym")(options "")(descr "EOH ADC board parts"))
+)
