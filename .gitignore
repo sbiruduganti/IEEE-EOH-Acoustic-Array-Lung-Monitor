@@ -1,14 +1,7 @@
-# KiCad backups and temp files
-*-backups/
-*.bak
-*.bck
-*.kicad_pcb-bak
-*.kicad_sch-bak
-*-cache.lib
-*-cache.kicad_sym
-fp-info-cache
-*.lck
-~*.lck
-_autosave-*
-*.kicad_prl
-*-rescue.*
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+.streamlit/
+data/raw_icbhi/
+models/checkpoints/
