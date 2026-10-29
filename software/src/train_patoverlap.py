@@ -10,9 +10,7 @@ from src.dataset_circpad_logdb_specaug_demoscale import ICBHIDataset
 from src.model import ICBHIModel
 import numpy as np
 
-def train_one_epoch(model, dataloader, criterion, optimizer, device):
-    if hasattr(dataloader.dataset, 'dataset'):
-        dataloader.dataset.dataset.is_train = True  # Handles PyTorch Subset    
+def train_one_epoch(model, dataloader, criterion, optimizer, device): 
     model.train()
     running_loss = 0.0
     correct = 0
@@ -31,6 +29,7 @@ def train_one_epoch(model, dataloader, criterion, optimizer, device):
 
         # Backward pass and optimization
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
         optimizer.step()
 
         running_loss += loss.item() * spectrogram.size(0)
@@ -44,8 +43,6 @@ def train_one_epoch(model, dataloader, criterion, optimizer, device):
 
 
 def validate(model, dataloader, criterion, device):
-    if hasattr(dataloader.dataset, 'dataset'):
-        dataloader.dataset.dataset.is_train = False  # Disables SpecAugment during validation
     model.eval()
     running_loss = 0.0
     correct = 0
@@ -76,7 +73,7 @@ def train_model():
     SAVE_DIR = "checkpoints"
     BATCH_SIZE = 32
     EPOCHS = 25
-    LEARNING_RATE = 1e-3
+    LEARNING_RATE = 3e-4  # Reduced learning rate to prevent wild gradient spikes
     VAL_SPLIT = 0.2
     NUM_CLASSES = 4
 
@@ -84,17 +81,21 @@ def train_model():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
-    # fix 1: Dataset loading and train/val split
     print("Loading ICBHI Dataset...")
-    full_dataset = ICBHIDataset(data_dir=DATA_DIR, demo_file=DEMO_FILE)
+    base_dataset = ICBHIDataset(data_dir=DATA_DIR, demo_file=DEMO_FILE)
 
-    # Fix 1: Patient-Aware Split using GroupShuffleSplit
+    # Patient-Aware Split using GroupShuffleSplit
     gss = GroupShuffleSplit(n_splits=1, test_size=VAL_SPLIT, random_state=42)
-    train_idx, val_idx = next(gss.split(full_dataset, groups=full_dataset.patient_ids))
+    train_idx, val_idx = next(gss.split(base_dataset, groups=base_dataset.patient_ids))
 
-    # Create distinct PyTorch dataset subsets
-    train_dataset = Subset(full_dataset, train_idx)
-    val_dataset = Subset(full_dataset, val_idx)
+    # Create two completely independent dataset instances
+    train_full = ICBHIDataset(data_dir=DATA_DIR, demo_file=DEMO_FILE)
+    train_full.is_train = True
+    train_dataset = Subset(train_full, train_idx)
+
+    val_full = ICBHIDataset(data_dir=DATA_DIR, demo_file=DEMO_FILE)
+    val_full.is_train = False
+    val_dataset = Subset(val_full, val_idx)
 
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=2)
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=2)
@@ -105,7 +106,7 @@ def train_model():
 
     #Important - class weighting calculation, new
     #extract laels across dataset to compute inverse frquency
-    all_labels = [sample["label"] for sample in full_dataset.samples]
+    all_labels = [sample["label"] for sample in base_dataset.samples]
     class_counts = np.bincount(all_labels, minlength = NUM_CLASSES)
     total_samples = len(all_labels)
 
