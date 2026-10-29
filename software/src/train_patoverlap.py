@@ -110,7 +110,7 @@ def train_model():
     class_counts = np.bincount(all_labels, minlength = NUM_CLASSES)
     total_samples = len(all_labels)
 
-    #calculate inverse weights
+    # fix, calculate smoothed inverse weights
     class_weights = total_samples / (NUM_CLASSES * class_counts.astype(np.float32))
     class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32).to(device)
 
