@@ -87,7 +87,7 @@ def train_model():
     SAVE_DIR = "checkpoints"
     BATCH_SIZE = 32
     EPOCHS = 25
-    LEARNING_RATE = 3e-4  # Reduced learning rate to prevent wild gradient spikes
+    LEARNING_RATE = 1e-4  # Reduced learning rate to prevent wild gradient spikes, lowered even further
     VAL_SPLIT = 0.2
     NUM_CLASSES = 4
 
@@ -138,8 +138,8 @@ def train_model():
 
     # Standard CrossEntropyLoss for 4-class classification
     criterion = nn.CrossEntropyLoss(weight=class_weights_tensor, label_smoothing=0.1)
-    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-2)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', patience=5, factor=0.5)
+    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-3) #slightly reduced weight decay for smoother gradient trajectories
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', patience=3, factor=0.5)
     
     # Training loop
     best_icbhi_score = 0.0

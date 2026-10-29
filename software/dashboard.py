@@ -20,7 +20,7 @@ CLASS_NAMES = ["Normal", "Crackle", "Wheeze", "Both (Crackle & Wheeze)"]
 
 # Dynamically locate the folder containing dashboard.py
 BASE_DIR = Path(__file__).resolve().parent
-CHECKPOINT_PATH = BASE_DIR / "checkpoints" / "best_icbhi_model.pth"
+CHECKPOINT_PATH = BASE_DIR / "checkpoints" / "best_icbhi_model_fixes.pth"
 
 # Map 8 channels to standard clinical chest positions
 STETHOSCOPE_POSITIONS = {
@@ -36,10 +36,13 @@ STETHOSCOPE_POSITIONS = {
 
 # Model Loading
 @st.cache_resource
+@st.cache_resource
 def load_trained_model():
     model = ICBHIModel(num_classes=4)
     if os.path.exists(CHECKPOINT_PATH):
-        checkpoint = torch.load(CHECKPOINT_PATH, map_location=torch.device('cpu'))
+        # Pass weights_only=False to allow dictionary metadata loading
+        checkpoint = torch.load(CHECKPOINT_PATH, map_location=torch.device('cpu'), weights_only=False)
+        
         # Support loading full checkpoint dict or raw state_dict
         if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
             model.load_state_dict(checkpoint['model_state_dict'])
@@ -65,8 +68,12 @@ st.sidebar.info(f"Calculated BMI: **{bmi:.1f}**")
 # Construct [1, 5] demographic vector matching dataset format:
 # [age, sex, bmi, age_present, bmi_present]
 sex_binary = 1.0 if sex == "Male" else 0.0
-# Live dashboard inputs assume age and bmi are provided (presence flags = 1.0)
-demo_tensor = torch.tensor([[age, sex_binary, bmi, 1.0, 1.0]], dtype=torch.float32)
+norm_age = age / 100.0
+norm_bmi = bmi / 50.0
+
+# Construct normalized [1, 5] demographic vector matching dataset format:
+# [norm_age, sex, norm_bmi, age_present, bmi_present]
+demo_tensor = torch.tensor([[norm_age, sex_binary, norm_bmi, 1.0, 1.0]], dtype=torch.float32)
 
 st.sidebar.markdown("---")
 st.sidebar.header("⚙️ Harness Settings")
