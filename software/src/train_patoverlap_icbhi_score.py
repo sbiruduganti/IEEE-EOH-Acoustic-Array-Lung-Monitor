@@ -137,8 +137,8 @@ def train_model():
     model = ICBHIModel(num_classes=NUM_CLASSES).to(device)
 
     # Standard CrossEntropyLoss for 4-class classification
-    criterion = nn.CrossEntropyLoss(weight=class_weights_tensor)
-    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-4)
+    criterion = nn.CrossEntropyLoss(weight=class_weights_tensor, label_smoothing=0.1)
+    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-2)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', patience=5, factor=0.5)
     
     # Training loop

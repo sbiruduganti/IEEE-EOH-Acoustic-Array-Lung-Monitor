@@ -23,9 +23,12 @@ class ICBHIDataset(Dataset):
         self.amplitude_to_db = T.AmplitudeToDB(top_db=80)
 
         # fix 3: SpecAugment for microphone/hardware robustness
+        #also fix: added dual mask spec augment for stronger regularizatoin and hardware robustness
         self.is_train = True
-        self.freq_mask = T.FrequencyMasking(freq_mask_param=15)
-        self.time_mask = T.TimeMasking(time_mask_param=20)
+        self.freq_mask1 = T.FrequencyMasking(freq_mask_param=24)
+        self.freq_mask2 = T.FrequencyMasking(freq_mask_param=24)
+        self.time_mask1 = T.TimeMasking(time_mask_param=48)
+        self.time_mask2 = T.TimeMasking(time_mask_param=48)
 
         #initialize demographics and annotations next
         self.demographics = self._load_demographics(demo_file)
@@ -176,9 +179,12 @@ class ICBHIDataset(Dataset):
         spectrogram = self.amplitude_to_db(spectrogram)
 
         #fix 3: apply specaugment if in trainingmode
+        #another fix: added dual mask spec aug
         if self.is_train:
-            spectrogram = self.freq_mask(spectrogram)
-            spectrogram = self.time_mask(spectrogram)
+            spectrogram = self.freq_mask1(spectrogram)
+            spectrogram = self.freq_mask2(spectrogram)
+            spectrogram = self.time_mask1(spectrogram)
+            spectrogram = self.time_mask2(spectrogram)
 
         #fix 2: zero-mean, unit variance standardization per spectrogram
         spectrogram = (spectrogram - spectrogram.mean()) / (spectrogram.std() + 1e-6)
