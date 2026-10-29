@@ -126,7 +126,7 @@ def train_model():
 
     # fix, calculate smoothed inverse weights
     raw_weights = total_samples / (NUM_CLASSES * class_counts.astype(np.float32))
-    class_weights = np.sqrt(raw_weights)
+    class_weights = np.power(raw_weights, 0.75) #adjusted power from 1 to 0.5 to 0.75 to give higher emphasis to abnormal classes
     class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32).to(device)
 
     print(f"\nClass Distribution: {class_counts.tolist()}")
@@ -139,7 +139,7 @@ def train_model():
     # Standard CrossEntropyLoss for 4-class classification
     criterion = nn.CrossEntropyLoss(weight=class_weights_tensor, label_smoothing=0.1)
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-3) #slightly reduced weight decay for smoother gradient trajectories
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', patience=3, factor=0.5)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS, eta_min=1e-6)
     
     # Training loop
     best_icbhi_score = 0.0
@@ -151,7 +151,7 @@ def train_model():
         val_loss, val_acc, se, sp, icbhi_score = validate_icbhi(model, val_loader, criterion, device)
 
         # Step scheduler on ICBHI Score (maximizing S)
-        scheduler.step(icbhi_score)
+        scheduler.step()
 
         print(f"Epoch [{epoch:02d}/{EPOCHS:02d}] "
               f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc*100:.2f}% | "
