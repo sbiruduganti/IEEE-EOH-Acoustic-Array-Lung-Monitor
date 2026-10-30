@@ -139,8 +139,8 @@ def train_model():
     # Standard CrossEntropyLoss for 4-class classification
     criterion = nn.CrossEntropyLoss(weight=class_weights_tensor, label_smoothing=0.1)
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-3) #slightly reduced weight decay for smoother gradient trajectories
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS, eta_min=1e-6)
-    
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', patience=3, factor=0.5, min_lr=1e-5)
+
     # Training loop
     best_icbhi_score = 0.0
 
@@ -151,7 +151,7 @@ def train_model():
         val_loss, val_acc, se, sp, icbhi_score = validate_icbhi(model, val_loader, criterion, device)
 
         # Step scheduler on ICBHI Score (maximizing S)
-        scheduler.step()
+        scheduler.step(icbhi_score)
 
         print(f"Epoch [{epoch:02d}/{EPOCHS:02d}] "
               f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc*100:.2f}% | "
