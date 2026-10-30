@@ -126,7 +126,7 @@ def train_model():
 
     # fix, calculate smoothed inverse weights
     raw_weights = total_samples / (NUM_CLASSES * class_counts.astype(np.float32))
-    class_weights = np.power(raw_weights, 0.75) #adjusted power from 1 to 0.5 to 0.75 to give higher emphasis to abnormal classes
+    class_weights = np.power(raw_weights, 0.50) #changed back to square_root smoothing
     class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32).to(device)
 
     print(f"\nClass Distribution: {class_counts.tolist()}")
