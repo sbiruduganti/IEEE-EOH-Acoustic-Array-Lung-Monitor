@@ -8,6 +8,7 @@ from sklearn.model_selection import GroupShuffleSplit
 
 from src.dataset_circpad_logdb_specaug_demoscale import ICBHIDataset
 from src.model import ICBHIModel
+from src.focal_loss import FocalLoss
 import numpy as np
 
 def train_one_epoch(model, dataloader, criterion, optimizer, device): 
@@ -90,6 +91,7 @@ def train_model():
     LEARNING_RATE = 1e-4  # Reduced learning rate to prevent wild gradient spikes, lowered even further
     VAL_SPLIT = 0.2
     NUM_CLASSES = 4
+    MIN_SENSITIVITY = 0.20  # Clinical guardrail: Requires >=20% Sensitivity to prevent high-specificity cheating
 
     os.makedirs(SAVE_DIR, exist_ok=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -130,48 +132,4 @@ def train_model():
     class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32).to(device)
 
     print(f"\nClass Distribution: {class_counts.tolist()}")
-    print(f"Calculated Class Weights: {class_weights_tensor.tolist()}\n")
-
-
-    # Model initialization, loss function, and optimizer
-    model = ICBHIModel(num_classes=NUM_CLASSES).to(device)
-
-    # Standard CrossEntropyLoss for 4-class classification
-    criterion = nn.CrossEntropyLoss(weight=class_weights_tensor, label_smoothing=0.1)
-    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-3) #slightly reduced weight decay for smoother gradient trajectories
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', patience=3, factor=0.5, min_lr=1e-5)
-
-    # Training loop
-    best_icbhi_score = 0.0
-
-    print("\n--- Starting Training ---")
-
-    for epoch in range(1, EPOCHS + 1):
-        train_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer, device)
-        val_loss, val_acc, se, sp, icbhi_score = validate_icbhi(model, val_loader, criterion, device)
-
-        # Step scheduler on ICBHI Score (maximizing S)
-        scheduler.step(icbhi_score)
-
-        print(f"Epoch [{epoch:02d}/{EPOCHS:02d}] "
-              f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc*100:.2f}% | "
-              f"Val Loss: {val_loss:.4f} | Val Acc: {val_acc*100:.2f}% | "
-              f"Se: {se*100:.1f}% | Sp: {sp*100:.1f}% | Score: {icbhi_score*100:.2f}%"
-        )
-
-        # Save checkpoint on highest ICBHI Score
-        if icbhi_score > best_icbhi_score:
-            best_icbhi_score = icbhi_score
-            save_path = os.path.join(SAVE_DIR, "best_icbhi_model.pth")
-            torch.save({
-                'epoch': epoch,
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'icbhi_score': icbhi_score,
-                'sensitivity': se,
-                'specificity': sp
-            }, save_path)
-            print(f"  --> Saved new best checkpoint (Score: {icbhi_score*100:.2f}%) to {save_path}")
-
-if __name__ == "__main__":
-    train_model()
+    print(f"Calculated Class Weights: {class_weights_tensor.tolist
