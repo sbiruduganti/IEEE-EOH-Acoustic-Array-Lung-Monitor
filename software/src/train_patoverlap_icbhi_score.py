@@ -132,4 +132,4 @@ def train_model():
     class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32).to(device)
 
     print(f"\nClass Distribution: {class_counts.tolist()}")
-    print(f"Calculated Class Weights: {class_weights_tensor.tolist
+    print(f"Calculated Class Weights: {class_weights_tensor.tolist()}\n")
