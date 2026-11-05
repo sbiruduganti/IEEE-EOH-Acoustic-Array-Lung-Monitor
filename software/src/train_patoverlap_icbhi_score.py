@@ -133,3 +133,20 @@ def train_model():
 
     print(f"\nClass Distribution: {class_counts.tolist()}")
     print(f"Calculated Class Weights: {class_weights_tensor.tolist()}\n")
+
+    # Model initialization, loss function, and optimizer
+    model = ICBHIModel(num_classes=NUM_CLASSES).to(device)
+
+    # FocalLoss replaces standard CrossEntropyLoss to dynamically penalize hard pathology samples
+    criterion = FocalLoss(alpha=class_weights_tensor, gamma=2.0, label_smoothing=0.1)
+    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-3) #slightly reduced weight decay for smoother gradient trajectories
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', patience=3, factor=0.5, min_lr=1e-5)
+
+    # Training loop
+    best_icbhi_score = 0.0
+
+    print("\n--- Starting Training ---")
+
+    for epoch in range(1, EPOCHS + 1):
+        train_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer, device)
+        val_loss, val_acc, se, sp, icbhi_score = validate_icbhi(model, val_loader, criterion, device)
