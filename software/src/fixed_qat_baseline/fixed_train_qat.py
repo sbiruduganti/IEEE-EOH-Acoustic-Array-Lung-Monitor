@@ -5,7 +5,7 @@ import numpy as np
 from torch.utils.data import DataLoader, random_split
 from src.fixed_qat_baseline.fixed_dataset_qat import ICBHIDataset
 from src.fixed_qat_baseline.fixed_model_qat import ICBHIModelQAT
-from brevitas.export.onnx.finn.manager import FINNManager
+from brevitas.export import export_qonnx
 
 def train_one_epoch(model, dataloader, criterion, optimizer, device):
     model.train()
@@ -118,12 +118,11 @@ def run_qat_finetuning():
     model.load_state_dict(torch.load(QAT_CHECKPOINT)['model_state_dict'])
     model.eval().to("cpu")
     
-    # Define dummy inputs matching the full forward() signature (spectrogram + demographics)
     dummy_spectrogram = torch.randn(1, 1, 128, 128)
     dummy_demographics = torch.randn(1, 5)
     
-    # Export full model (Backbone + Demo MLP + Classifier Head) using FINNManager
-    FINNManager.export(
+    # Export full model to QONNX format expected by FINN
+    export_qonnx(
         model, 
         input_t=(dummy_spectrogram, dummy_demographics), 
         export_path=ONNX_EXPORT_PATH
