@@ -5,8 +5,7 @@ import numpy as np
 from torch.utils.data import DataLoader, random_split
 from src.fixed_qat_baseline.fixed_dataset_qat import ICBHIDataset
 from src.fixed_qat_baseline.fixed_model_qat import ICBHIModelQAT
-from brevitas.export import FINNManager
-
+from brevitas.export.onnx.finn.manager import FINNManager
 def train_one_epoch(model, dataloader, criterion, optimizer, device):
     model.train()
     running_loss, correct, total = 0.0, 0, 0
