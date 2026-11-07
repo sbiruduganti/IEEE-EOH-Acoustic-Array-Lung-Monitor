@@ -5,7 +5,7 @@ import numpy as np
 from torch.utils.data import DataLoader, random_split
 from src.fixed_qat_baseline.fixed_dataset_qat import ICBHIDataset
 from src.fixed_qat_baseline.fixed_model_qat import ICBHIModelQAT
-from brevitas.export import export_qonnx
+from brevitas.export import export_finn_onnx
 
 def train_one_epoch(model, dataloader, criterion, optimizer, device):
     model.train()
@@ -119,8 +119,9 @@ def run_qat_finetuning():
     model.eval().to("cpu")
     
     dummy_input = torch.randn(1, 1, 128, 128)
-    export_qonnx(model.backbone, args=dummy_input, export_path=ONNX_EXPORT_PATH)
-    print(f"Successfully exported fine-tuned ONNX model to: {ONNX_EXPORT_PATH}")
+    # Using Brevitas FINN ONNX exporter to avoid PyTorch dynamo backend overriding
+    export_finn_onnx(model.backbone, input_t=dummy_input, export_path=ONNX_EXPORT_PATH)
+    print(f"Successfully exported fine-tuned FINN ONNX model to: {ONNX_EXPORT_PATH}")
 
 if __name__ == "__main__":
     run_qat_finetuning()
