@@ -5,7 +5,7 @@ import numpy as np
 from torch.utils.data import DataLoader, random_split
 from src.fixed_qat_baseline.fixed_dataset_qat import ICBHIDataset
 from src.fixed_qat_baseline.fixed_model_qat import ICBHIModelQAT
-from brevitas.export import export_finn_onnx
+from brevitas.export import FINNManager
 
 def train_one_epoch(model, dataloader, criterion, optimizer, device):
     model.train()
@@ -51,7 +51,7 @@ def run_qat_finetuning():
     SAVE_DIR = "checkpoints"
     FP32_CHECKPOINT = os.path.join(SAVE_DIR, "best_icbhi_model.pth")
     QAT_CHECKPOINT = os.path.join(SAVE_DIR, "best_icbhi_model_qat.pth")
-    ONNX_EXPORT_PATH = os.path.join(SAVE_DIR, "finn_audio_backbone.onnx")
+    ONNX_EXPORT_PATH = os.path.join(SAVE_DIR, "finn_full_model.onnx")
     
     BATCH_SIZE, EPOCHS, LEARNING_RATE, VAL_SPLIT, NUM_CLASSES = 32, 15, 1e-4, 0.2, 4
 
@@ -114,14 +114,21 @@ def run_qat_finetuning():
             torch.save({'model_state_dict': model.state_dict(), 'val_acc': val_acc}, QAT_CHECKPOINT)
             print(f"  --> Saved new best QAT checkpoint ({val_acc*100:.2f}% accuracy)")
 
-    print("\n--- Exporting Fine-Tuned FINN ONNX Graph ---")
+    print("\n--- Exporting Fine-Tuned FINN ONNX Graph (Full Multimodal Model) ---")
     model.load_state_dict(torch.load(QAT_CHECKPOINT)['model_state_dict'])
     model.eval().to("cpu")
     
-    dummy_input = torch.randn(1, 1, 128, 128)
-    # Using Brevitas FINN ONNX exporter to avoid PyTorch dynamo backend overriding
-    export_finn_onnx(model.backbone, input_t=dummy_input, export_path=ONNX_EXPORT_PATH)
-    print(f"Successfully exported fine-tuned FINN ONNX model to: {ONNX_EXPORT_PATH}")
+    # Define dummy inputs matching the full forward() signature (spectrogram + demographics)
+    dummy_spectrogram = torch.randn(1, 1, 128, 128)
+    dummy_demographics = torch.randn(1, 5)
+    
+    # Export full model (Backbone + Demo MLP + Classifier Head) using FINNManager
+    FINNManager.export(
+        model, 
+        input_t=(dummy_spectrogram, dummy_demographics), 
+        export_path=ONNX_EXPORT_PATH
+    )
+    print(f"Successfully exported full FINN ONNX model to: {ONNX_EXPORT_PATH}")
 
 if __name__ == "__main__":
     run_qat_finetuning()
