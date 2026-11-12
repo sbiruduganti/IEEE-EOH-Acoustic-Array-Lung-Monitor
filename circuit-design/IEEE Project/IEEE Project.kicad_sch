@@ -7258,7 +7258,7 @@
 			)
 		)
 	)
-	(global_label "IQR_B_N"
+	(global_label "IRQ_B_N"
 		(shape input)
 		(at 243.84 77.47 0)
 		(fields_autoplaced yes)
@@ -7330,7 +7330,7 @@
 			)
 		)
 	)
-	(global_label "IQR_A_N"
+	(global_label "IRQ_A_N"
 		(shape input)
 		(at 119.38 77.47 0)
 		(fields_autoplaced yes)
@@ -7378,7 +7378,7 @@
 			)
 		)
 	)
-	(global_label "SDOUT"
+	(global_label "SDOUT_A"
 		(shape input)
 		(at 123.19 74.93 0)
 		(fields_autoplaced yes)
@@ -7402,7 +7402,7 @@
 			)
 		)
 	)
-	(global_label "SDOUT"
+	(global_label "SDOUT_B"
 		(shape input)
 		(at 247.65 74.93 0)
 		(fields_autoplaced yes)
