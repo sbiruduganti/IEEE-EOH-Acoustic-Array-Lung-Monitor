@@ -24,27 +24,90 @@ class ICBHIDataset(Dataset):
             self.patient_ids = cache["patient_ids"]
             return
 
-        print("[Dataset] Building 4000 Hz feature cache (runs once, takes ~45s)...", flush=True)
-        resamplers = {}
-        mel_transform = torchaudio.transforms.MelSpectrogram(
-            sample_rate=sample_rate, n_fft=512, hop_length=251, n_mels=n_mels, f_min=50.0, f_max=2000.0
-        )
-        delta_transform = torchaudio.transforms.ComputeDeltas()
+    def _load_demographics(self, demo_path):
+        demo_dict = {}
+        if demo_path is None or not os.path.exists(demo_path):
+            print(f"Warning: Demographic file '{demo_path}' not found. Defaulting mask flags to 0.")
+            return demo_dict
+        
+        with open(demo_path, 'r') as f:
+            for line in f:
+                parts = line.strip().split()
+                if len(parts)<6:
+                    continue
+                try:
+                    patient_id = int(parts[0])
 
-        # Load demographic data
-        demographics = {}
-        for fname in ["filename_to_demographics.txt", "demographic_info.txt"]:
-            demo_path = os.path.join(data_dir, fname)
-            if os.path.exists(demo_path):
-                df_demo = pd.read_csv(demo_path, sep=r"\s+|\t", engine="python", header=None, na_values="NA")
-                for _, row in df_demo.iterrows():
-                    pid = str(int(row[0])) if pd.notna(row[0]) and str(row[0]).isdigit() else str(row[0])
-                    age = float(row[1]) / 100.0 if pd.notna(row[1]) else 0.60
-                    sex = 1.0 if str(row[2]).strip().upper() == "M" else 0.0
-                    if pd.notna(row[3]):
-                        bmi = float(row[3]) / 50.0
-                    elif len(row) > 5 and pd.notna(row[4]) and pd.notna(row[5]) and float(row[5]) > 0:
-                        bmi = (float(row[4]) / ((float(row[5]) / 100.0) ** 2)) / 50.0
+                except ValueError:
+                    continue #skip header or malformed rows
+                
+                #age
+                age_present = 1.0 if parts[1] != 'NA' else 0.0
+                age = float(parts[1]) if age_present else 0.0
+
+                #sex
+                sex = 1.0 if parts[2] == 'M' else 0.0
+
+                #bmi
+                bmi_present = 0.0
+                bmi = 0.0
+
+                if parts[3] != 'NA':
+                    bmi = float(parts[3])
+                    bmi_present = 1.0
+                elif parts[4] != 'NA' and parts[5] != 'NA':
+                    try:
+                        weight_kg = float(parts[4])
+                        height_m = float(parts[5])/100.0
+                        if height_m>0:
+                            bmi = weight_kg / (height_m**2)
+                            bmi_present = 1.0
+                    except ValueError:
+                        bmi = 0.0
+
+                #5-element vector
+                demo_dict[patient_id] = [age, sex, bmi, age_present, bmi_present]
+        return demo_dict
+    
+    def _parse_annotations(self):
+        samples = []
+
+        #Find all .txt files inside data_dir (including subdirectories)
+        txt_files = glob.glob(os.path.join(self.data_dir, "**", "*.txt"), recursive=True)
+
+        for txt_path in txt_files:
+            #match text fileto audio .wav file
+            wav_path = txt_path.replace(".txt", ".wav")
+            if not os.path.exists(wav_path):
+                continue
+            
+            filename = os.path.basename(txt_path)
+            try:
+                #extract patient id
+                patient_id = int(filename.split("_")[0])
+            except ValueError:
+                continue
+            
+            #read line by line
+            with open(txt_path, 'r') as f:
+                for line in f:
+                    parts = line.strip().split()
+                    if len(parts)<4:
+                        continue
+                    
+                    start_t = float(parts[0])
+                    end_t = float(parts[1])
+                    crackle = int(parts[2])
+                    wheeze = int(parts[3])
+
+                    #Map flags to 4 classes
+
+                    if crackle == 0 and wheeze == 0:
+                        label = 0 #normal
+                    elif crackle == 1 and wheeze == 0:
+                        label = 1 #crackle
+                    elif crackle == 0 and wheeze == 1:
+                        label = 2 #wheeze
                     else:
                         bmi = 0.50
                     demographics[pid] = [age, bmi, sex, 0.0, 0.0]
