@@ -1,0 +1,15 @@
+# Vivado generated
+*.jou
+*.log
+*.str
+.Xil/
+*.cache/
+*.runs/
+*.sim/
+*.hw/
+*.ip_user_files/
+*.gen/
+# simulation outputs
+sim
+*.vcd
+*.wdb
