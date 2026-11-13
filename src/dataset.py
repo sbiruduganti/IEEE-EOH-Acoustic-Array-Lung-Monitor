@@ -1,15 +1,17 @@
 """
 Drop-in replacement for `software/src/dataset.py`
 Repository: https://github.com/sbiruduganti/IEEE-EOH-Acoustic-Array-Lung-Monitor
+Baseline Aligned with: `10_29_26_trained_circpad_other_fixes.ipynb`
 
 Key Upgrades:
-1. Filters for the 4 well-populated specific diagnoses (`Healthy`, `COPD`, `Pneumonia`, `URTI`)
+1. Preserves Circular Padding (`circpad`) from `10_29_26_trained_circpad_other_fixes.ipynb`
+   so short breathing cycles wrap seamlessly without introducing artificial zero-padding step edges.
+2. Filters for the 4 well-populated specific diagnoses (`Healthy`, `COPD`, `Pneumonia`, `URTI`)
    and exposes `gate_mode` ("gate1", "gate2", "gate3", or "cascade_eval") for 2-class training.
-2. Computes the hardware-reproducible 4,000 Hz, 256-point Q1.15 STFT + Log2 UINT8 compression
+3. Computes the hardware-reproducible 4,000 Hz, 256-point Q1.15 STFT + Log2 UINT8 compression
    producing an exact power-of-2 `(1, 128, 128)` spectrogram (replacing `(1, 129, 126)`).
-3. Includes automatic `.pt` RAM caching (`icbhi_4khz_128x128_diag_cache.pt`) + `scipy.io.wavfile`
-   fallback so Google Colab & Windows PowerShell never hit `torchcodec`/FFmpeg bottlenecks and
-   epochs run in <0.5 seconds on a Colab T4 GPU.
+4. Includes automatic `.pt` RAM caching (`icbhi_4khz_128x128_circpad_cache.pt`) + `scipy.io.wavfile`
+   so Google Colab & Windows PowerShell never hit `torchcodec`/FFmpeg bottlenecks.
 """
 
 import os
@@ -50,7 +52,7 @@ class HardwareReproducibleSTFT256(nn.Module):
     """
     Bit-accurate software emulation of the UltraScale LogiCORE FFT v9.1 (PG109):
       - 4,000 Hz sample rate, N_FFT = 256, Hop = 64 (75% overlap)
-      - 8,384 samples (2.096s) -> exactly 128 frames
+      - Circular padding (`circpad`) to 8,384 samples (2.096s) -> exactly 128 frames
       - Drops Nyquist bin 128 -> keeps bins 0..127 -> exact `(1, 128, 128)` tensor
       - Stage scaling schedule `[2, 2, 2, 2]` (`/256`), Alpha-Max-Beta-Min magnitude,
         and Base-2 Log LUT (`floor(16 * log2(mag + 1))`) -> UINT8 `[0..255]` normalized to `[0, 1]`.
@@ -66,6 +68,20 @@ class HardwareReproducibleSTFT256(nn.Module):
         hann = 0.5 * (1.0 - torch.cos(2.0 * math.pi * n / n_fft))
         self.register_buffer("hann_q15", torch.round(hann * 32767.0))
 
+    @staticmethod
+    def circular_pad_1d(waveform: torch.Tensor, target_len: int) -> torch.Tensor:
+        """
+        Circularly wraps/repeats short respiratory cycles to `target_len` (matching the
+        `circpad` fix from `10_29_26_trained_circpad_other_fixes.ipynb`) instead of zero-padding.
+        """
+        cur_len = waveform.numel()
+        if cur_len == 0:
+            return torch.zeros(target_len, dtype=waveform.dtype, device=waveform.device)
+        if cur_len < target_len:
+            repeats = math.ceil(target_len / cur_len)
+            return waveform.repeat(repeats)[:target_len]
+        return waveform[:target_len]
+
     def forward(self, waveform: torch.Tensor) -> torch.Tensor:
         if waveform.dim() == 2:
             waveform = waveform.squeeze(0)
@@ -73,10 +89,8 @@ class HardwareReproducibleSTFT256(nn.Module):
         peak = waveform.abs().max().clamp(min=1e-5)
         waveform = (waveform / peak).clamp(-1.0, 0.999969)
 
-        if waveform.numel() < self.target_samples:
-            waveform = F.pad(waveform, (0, self.target_samples - waveform.numel()))
-        else:
-            waveform = waveform[: self.target_samples]
+        # Apply circular padding (`circpad`) to exact 8384 samples
+        waveform = self.circular_pad_1d(waveform, self.target_samples)
 
         x_q15 = torch.round(waveform * 32768.0)
         frames = x_q15.unfold(dimension=-1, size=self.n_fft, step=self.hop_length)
@@ -97,9 +111,9 @@ class HardwareReproducibleSTFT256(nn.Module):
 class ICBHIDataset(Dataset):
     """
     Drop-in replacement for `ICBHIDataset` in `software/src/dataset.py`.
-    Builds or loads a single precomputed `.pt` cache (`icbhi_4khz_128x128_diag_cache.pt`)
-    containing all `(1, 128, 128)` spectrograms, `(5,)` demographics, and diagnosis IDs,
-    and dynamically filters them for `gate1`, `gate2`, `gate3`, or `cascade_eval`.
+    Builds or loads a single precomputed `.pt` cache (`icbhi_4khz_128x128_circpad_cache.pt`)
+    containing all `(1, 128, 128)` circularly-padded spectrograms, `(5,)` demographics,
+    and diagnosis IDs, and dynamically filters them for `gate1`, `gate2`, `gate3`, or `cascade_eval`.
     """
 
     def __init__(
@@ -120,16 +134,14 @@ class ICBHIDataset(Dataset):
         self.stft_transform = HardwareReproducibleSTFT256(n_fft=256, hop_length=64)
 
         if cache_path is None:
-            cache_path = os.path.join(self.data_dir, "icbhi_4khz_128x128_diag_cache.pt")
+            cache_path = os.path.join(self.data_dir, "icbhi_4khz_128x128_circpad_cache.pt")
         self.cache_path = cache_path
 
         self.demographics_map = self._load_demographics(demo_file)
         self.diagnosis_map = self._load_diagnoses(diag_file)
 
-        # Load or build the master 4-diagnosis cache once
         all_cached_records = self._load_or_build_cache()
 
-        # Filter records for the active binary specialist gate
         self.samples: List[Dict] = []
         for rec in all_cached_records:
             gate_label = self._map_diagnosis_to_gate_label(rec["diagnosis_name"], self.gate_mode)
@@ -213,10 +225,6 @@ class ICBHIDataset(Dataset):
         raise ValueError(f"Unsupported gate_mode: {gate_mode}")
 
     def _load_audio_4khz(self, wav_path: str) -> torch.Tensor:
-        """
-        Loads `.wav` and resamples to 4,000 Hz using `scipy.io.wavfile` + `resample_poly` first
-        (completely avoiding `torchcodec` / FFmpeg DLL crashes), with `torchaudio` fallback.
-        """
         if SCIPY_AVAILABLE:
             orig_sr, data = scipy_wavfile.read(wav_path)
             if data.ndim > 1:
@@ -248,13 +256,13 @@ class ICBHIDataset(Dataset):
 
     def _load_or_build_cache(self) -> List[Dict]:
         if os.path.exists(self.cache_path):
-            print(f"[ICBHIDataset] Loading precomputed 4kHz STFT cache from {self.cache_path}...")
+            print(f"[ICBHIDataset] Loading precomputed 4kHz circpad STFT cache from {self.cache_path}...")
             return torch.load(self.cache_path, map_location="cpu", weights_only=False)
 
         txt_files = sorted(glob.glob(os.path.join(self.data_dir, "**", "*.txt"), recursive=True))
         records: List[Dict] = []
 
-        print(f"[ICBHIDataset] Building 4kHz (1, 128, 128) STFT cache across {len(txt_files)} files...")
+        print(f"[ICBHIDataset] Building 4kHz (1, 128, 128) circpad STFT cache across {len(txt_files)} files...")
         for txt_path in txt_files:
             base = os.path.basename(txt_path)
             if any(k in base.lower() for k in ("demographics", "diagnosis", "filename", "events")):
@@ -285,7 +293,6 @@ class ICBHIDataset(Dataset):
                     cycle_wav = waveform[:, s_idx:e_idx]
                     if cycle_wav.numel() < 400:
                         continue
-                    # Save as uint8 [0..255] to keep cache compact (~90 MB in RAM)
                     spec_float = self.stft_transform(cycle_wav)
                     spec_uint8 = torch.round(spec_float * 255.0).to(torch.uint8)
                     records.append(
@@ -300,7 +307,7 @@ class ICBHIDataset(Dataset):
         if len(records) > 0:
             os.makedirs(os.path.dirname(os.path.abspath(self.cache_path)), exist_ok=True)
             torch.save(records, self.cache_path)
-            print(f"[ICBHIDataset] Saved {len(records)} cycles to {self.cache_path}.")
+            print(f"[ICBHIDataset] Saved {len(records)} circularly-padded cycles to {self.cache_path}.")
         return records
 
     def __len__(self) -> int:
