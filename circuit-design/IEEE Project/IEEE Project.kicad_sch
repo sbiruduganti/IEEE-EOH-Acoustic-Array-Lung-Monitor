@@ -5,6 +5,121 @@
 	(uuid "a83ad952-772e-44e1-9d90-6ca849c143af")
 	(paper "A3")
 	(lib_symbols
+		(symbol "power:PWR_FLAG"
+			(power global)
+			(pin_numbers
+				(hide yes)
+			)
+			(pin_names
+				(offset 0)
+				(hide yes)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "#FLG"
+				(at 0 1.905 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "PWR_FLAG"
+				(at 0 3.81 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "Special symbol for telling ERC where power comes from"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_keywords" "flag power"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "PWR_FLAG_0_0"
+				(pin power_out line
+					(at 0 0 90)
+					(length 0)
+					(name ""
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(symbol "PWR_FLAG_0_1"
+				(polyline
+					(pts
+						(xy 0 0) (xy 0 1.27) (xy -1.016 1.905) (xy 0 2.54) (xy 1.016 1.905) (xy 0 1.27)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "Regulator_Linear:TLV75518PDBV"
 			(pin_names
 				(offset 0.254)
@@ -2217,7 +2332,7 @@
 						)
 					)
 				)
-				(pin power_in line
+				(pin power_out line
 					(at -17.78 10.16 0)
 					(length 5.08)
 					(name "VREF"
@@ -3633,70 +3748,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "fe3f5c19-d99f-466c-94eb-f420b258e33d")
-	)
-	(no_connect
-		(at 165.1 46.99)
-		(uuid "0977de3f-2bb9-45a0-9ce9-48c087224a45")
-	)
-	(no_connect
-		(at 60.96 234.95)
-		(uuid "098558d0-fa9a-4a1f-87b3-92f8aac57584")
-	)
-	(no_connect
-		(at 165.1 173.99)
-		(uuid "0a332fd5-c357-4909-b410-00f1545d7975")
-	)
-	(no_connect
-		(at 165.1 113.03)
-		(uuid "0aabfd60-db76-448d-8b82-c12d540b324a")
-	)
-	(no_connect
-		(at 165.1 168.91)
-		(uuid "1381f66b-e46d-4073-8445-7f449e9abe54")
-	)
-	(no_connect
-		(at 60.96 46.99)
-		(uuid "29a10389-5da3-4aa6-bae9-86b5dbbe328a")
-	)
-	(no_connect
-		(at 60.96 41.91)
-		(uuid "33ce1f6c-2ee6-4821-a402-60905554dac9")
-	)
-	(no_connect
-		(at 60.96 173.99)
-		(uuid "37179535-143d-482e-90d9-6fae9ec3f64c")
-	)
-	(no_connect
-		(at 165.1 234.95)
-		(uuid "3e144f8c-0e3b-4ad2-bbbc-cf84e337757f")
-	)
-	(no_connect
-		(at 60.96 229.87)
-		(uuid "748a0381-0d79-40f9-865f-e97bc26f3b18")
-	)
-	(no_connect
-		(at 60.96 113.03)
-		(uuid "88b38aae-e43c-4b58-8a6e-91c3ae6fb243")
-	)
-	(no_connect
-		(at 165.1 107.95)
-		(uuid "8f86b017-589a-4142-afed-d3e4129c0c0b")
-	)
-	(no_connect
-		(at 165.1 229.87)
-		(uuid "a2c069ce-cdd9-4d81-892e-76e87f3b46e3")
-	)
-	(no_connect
-		(at 60.96 168.91)
-		(uuid "b5b6344e-4a33-4bd7-8fb0-e89447e61322")
-	)
-	(no_connect
-		(at 60.96 107.95)
-		(uuid "c4aefaa1-530c-4915-b713-4b209023fd59")
-	)
-	(no_connect
-		(at 165.1 41.91)
-		(uuid "cda0b6c4-00fb-4a21-807b-fb789757c53e")
 	)
 	(wire
 		(pts
@@ -6297,16 +6348,6 @@
 			(type default)
 		)
 		(uuid "9b70e46c-c803-4c58-a494-1d826fc41069")
-	)
-	(wire
-		(pts
-			(xy 254 33.02) (xy 266.7 33.02)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "9b8583f5-fbd5-4184-bd15-61f0cc1045b6")
 	)
 	(wire
 		(pts
@@ -25871,7 +25912,7 @@
 	)
 	(wire
 		(pts
-			(xy 390.53 114.3) (xy 390.53 111.76)
+			(xy 391.16 114.3) (xy 391.16 111.76)
 		)
 		(stroke
 			(width 0)
@@ -25881,7 +25922,7 @@
 	)
 	(wire
 		(pts
-			(xy 390.53 121.92) (xy 390.53 124.46)
+			(xy 391.16 121.92) (xy 391.16 124.46)
 		)
 		(stroke
 			(width 0)
@@ -28633,7 +28674,7 @@
 	)
 	(symbol
 		(lib_id "Device:R_US")
-		(at 390.53 118.11 0)
+		(at 391.16 118.11 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -28643,7 +28684,7 @@
 		(dnp no)
 		(uuid "2cdb9074-2022-442f-8a1d-d1598883e0c2")
 		(property "Reference" "R60"
-			(at 393.07 116.84 0)
+			(at 393.7 116.84 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -28653,7 +28694,7 @@
 			)
 		)
 		(property "Value" "10k"
-			(at 393.07 119.38 0)
+			(at 393.7 119.38 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -28663,7 +28704,7 @@
 			)
 		)
 		(property "Footprint" "Resistor_SMD:R_0805_2012Metric"
-			(at 390.53 118.11 0)
+			(at 391.16 118.11 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -28674,7 +28715,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 390.53 118.11 0)
+			(at 391.16 118.11 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -28685,7 +28726,7 @@
 			)
 		)
 		(property "Description" "Resistor, US symbol"
-			(at 390.53 118.11 0)
+			(at 391.16 118.11 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -28981,7 +29022,7 @@
 	)
 	(global_label "IOVDD"
 		(shape input)
-		(at 390.53 111.76 90)
+		(at 391.16 111.76 90)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -29005,7 +29046,7 @@
 	)
 	(global_label "SHDNZ"
 		(shape input)
-		(at 390.53 124.46 270)
+		(at 391.16 124.46 270)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -29120,6 +29161,263 @@
 					(size 1.27 1.27)
 				)
 				(justify left)
+			)
+		)
+	)
+	(wire
+		(pts
+			(xy 254 33.02) (xy 260.35 33.02)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "bd81d1bf-aa15-4503-9e86-02821f958de8")
+	)
+	(wire
+		(pts
+			(xy 260.35 33.02) (xy 266.7 33.02)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "24e2734d-6609-4a28-9cde-a9a2ab29195c")
+	)
+	(junction
+		(at 260.35 33.02)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "1edb982d-1c5e-4142-bd55-c485fc74611b")
+	)
+	(symbol
+		(lib_id "power:PWR_FLAG")
+		(at 260.35 33.02 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "1f38ae1d-2b44-4315-82ea-09f0610c57a1")
+		(property "Reference" "#FLG01"
+			(at 260.35 31.115 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "PWR_FLAG"
+			(at 260.35 29.21 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 260.35 33.02 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 260.35 33.02 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Special symbol for telling ERC where power comes from"
+			(at 260.35 33.02 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "552cf051-12a7-481b-afce-59b2a72c6110")
+		)
+		(instances
+			(project "IEEE Project"
+				(path "/a83ad952-772e-44e1-9d90-6ca849c143af"
+					(reference "#FLG01")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:PWR_FLAG")
+		(at 375.92 139.7 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "e59c006c-7f1e-49ec-bcd1-a3c605c63590")
+		(property "Reference" "#FLG02"
+			(at 375.92 137.795 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "PWR_FLAG"
+			(at 375.92 135.89 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 375.92 139.7 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 375.92 139.7 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Special symbol for telling ERC where power comes from"
+			(at 375.92 139.7 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "63c6acd0-968b-4fd9-bad8-b5d25f07b2fe")
+		)
+		(instances
+			(project "IEEE Project"
+				(path "/a83ad952-772e-44e1-9d90-6ca849c143af"
+					(reference "#FLG02")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 375.92 139.7 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "eaf45e6c-cd5a-4acf-ac79-6809d4bcb062")
+		(property "Reference" "#PWR098"
+			(at 375.92 139.7 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 375.92 143.51 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 375.92 139.7 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 375.92 139.7 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 375.92 139.7 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "042168f9-8060-4065-a48b-73026d8e0337")
+		)
+		(instances
+			(project "IEEE Project"
+				(path "/a83ad952-772e-44e1-9d90-6ca849c143af"
+					(reference "#PWR098")
+					(unit 1)
+				)
 			)
 		)
 	)

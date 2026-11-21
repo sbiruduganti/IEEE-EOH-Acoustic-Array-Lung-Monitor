@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "TLV320ADC5140")(type "KiCad")(uri "${KIPRJMOD}/TLV320ADC5140.kicad_sym")(options "")(descr "TLV320ADC5140 symbol for this project"))
+)
