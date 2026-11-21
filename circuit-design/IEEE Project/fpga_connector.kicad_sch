@@ -4349,84 +4349,6 @@
 		)
 	)
 	(symbol
-		(lib_id "power:GND")
-		(at 15.3162 0.3811 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "274f9d42-ea85-422f-80be-271a292a5a9c")
-		(property "Reference" "#PWR023"
-			(at 15.3162 6.7311 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "GND"
-			(at 15.3162 5.4611 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 15.3162 0.3811 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 15.3162 0.3811 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 15.3162 0.3811 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "6ddd96b9-6b06-43ab-91a8-f0334c302944")
-		)
-		(instances
-			(project "IEEE Project"
-				(path "/a83ad952-772e-44e1-9d90-6ca849c143af/446b273c-e116-4f54-a263-5c8cb0806f04"
-					(reference "#PWR023")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "74xGxx:74LVC2G34")
 		(at 69.85 130.81 0)
 		(unit 2)
@@ -5152,7 +5074,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+		(property "Footprint" "Resistor_SMD:R_0805_2012Metric"
 			(at 87.63 110.49 0)
 			(hide yes)
 			(show_name no)
@@ -5533,86 +5455,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:C_Small_US")
-		(at 6.4262 9.2711 90)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "bd6374a0-6e90-4ab8-b14e-708f9b170f21")
-		(property "Reference" "C65"
-			(at 6.5532 2.9211 90)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "10u"
-			(at 6.5532 5.4611 90)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 6.4262 9.2711 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 6.4262 9.2711 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "capacitor, small US symbol"
-			(at 6.4262 9.2711 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "a1b9b769-38ee-4b03-b340-e6d3f39e45d5")
-		)
-		(pin "2"
-			(uuid "7398a89a-332e-480b-a35a-ad04c92ce586")
-		)
-		(instances
-			(project "IEEE Project"
-				(path "/a83ad952-772e-44e1-9d90-6ca849c143af/446b273c-e116-4f54-a263-5c8cb0806f04"
-					(reference "C65")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Device:R_Small")
 		(at 87.63 130.81 90)
 		(unit 1)
@@ -5643,7 +5485,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+		(property "Footprint" "Resistor_SMD:R_0805_2012Metric"
 			(at 87.63 130.81 0)
 			(hide yes)
 			(show_name no)
